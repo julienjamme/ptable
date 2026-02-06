@@ -55,7 +55,7 @@ pt_optim_entropy <- function(optim = optim,
   options(digits = ndigits, scipen = ndigits)
   
   x0 <- rep(1, length(v))
-
+  
   # Fixed parameters
   local_opts <- list("algorithm" = "NLOPT_LD_MMA",
                      "xtol_rel"  = 1 / (10 ^ ndigits))
@@ -69,27 +69,36 @@ pt_optim_entropy <- function(optim = optim,
   
   # Optimization functions (according to parameter 'optim')
   if (optim == 1) {
+    fct_eval_f <- eval_f
     fct_eval_g_ineq <- eval_g_ineq_v1
     fct_eval_g_eq <- eval_g_eq_v1_v2_v3
   }
   if (optim == 2) {
+    fct_eval_f <- eval_f
     fct_eval_g_ineq <- eval_g_ineq_v2
     fct_eval_g_eq <- eval_g_eq_v1_v2_v3
   }
   if (optim == 3) {
+    fct_eval_f <- eval_f
     fct_eval_g_ineq <- eval_g_ineq_v3
     fct_eval_g_eq <- eval_g_eq_v1_v2_v3
   }
   if (optim == 4) {
+    fct_eval_f <- eval_f
     fct_eval_g_ineq <- eval_g_ineq_v4
     fct_eval_g_eq <- eval_g_eq_v4
   }
-
-
+  if (optim == 5) {
+    fct_eval_f <- eval_f_v5
+    fct_eval_g_ineq <- eval_g_ineq_v5
+    fct_eval_g_eq <- eval_g_eq_v5
+  }
+  
+  
   # Optimization
   res <- nloptr(
     x0 = x0,
-    eval_f = eval_f,
+    eval_f = fct_eval_f,
     lb = lb,
     ub = ub,
     eval_g_ineq = fct_eval_g_ineq,
@@ -293,3 +302,66 @@ eval_g_eq_v4 <- function(x,
   
   return(list("constraints" = constr, "jacobian" = grad))
 }
+
+
+
+# Biased alternative ------------------------------------------------------
+
+# Objective: minimize the euclidean distance between the reference point and the (entropy, bias) point
+eval_f_v5 <- function(x,
+                      v = v,
+                      variance = variance,
+                      mono = mono) {
+  n = length(v)
+  xref <- rep(1 / n, n)
+  entropy_ref <- sum(xref * log2(xref))  # entropy part
+  entropy_diff <- entropy_ref - sum(x * log2(x))
+  grad_entropy_diff <- log2(x) + log2(exp(1))
+  bias <- sum(v * x)
+  grad_bias <- v
+  obj <- entropy_diff^2 + bias^2
+  return(list(
+    "objective" = obj,
+    "gradient" = 2*grad_entropy_diff*entropy_diff + 2*grad_bias*bias
+  ))
+}
+
+# For biased variant: variance = V
+eval_g_eq_v5 <- function(x,
+                         v = v,
+                         variance = variance,
+                         mono = mono) {
+  constr <- c(sum(x) - 1,  sum(v^2 * x) - variance)
+  grad   <- rbind(rep(1, length(v)), v^2)
+  
+  return(list("constraints" = constr, "jacobian" = grad))
+}
+
+
+eval_g_ineq_v5 <- function(x,
+                           v = v,
+                           variance = variance,
+                           mono = mono) {
+  constr <- c(x - 1,-x)
+  grad   <-
+    rbind(diag(1, length(v), length(v)), diag(-1, length(v), length(v)))
+  
+  # monotony condition
+  if (mono) {
+    mono_fct <- eval_g_mono(
+      x = x,
+      v = v,
+      constr = constr,
+      grad = grad
+    )
+    constr <- mono_fct$constr
+    grad <- mono_fct$grad
+  }
+  
+  return(list("constraints" = constr, "jacobian" = grad))
+}
+
+
+
+
+
