@@ -109,7 +109,8 @@ create_ptable <- function(D,
                           monitoring = FALSE,
                           debugging = FALSE,
                           create = TRUE,
-                          params = NULL) {
+                          params = NULL,
+                          scale = FALSE) { #to avoid error prompt while sum of p is not exactly 1 = > p are scaled to reach sum(p)=1
   stopifnot(is_logical(monitoring))
   stopifnot(is_logical(debugging))
   stopifnot(is_logical(create))
@@ -138,7 +139,8 @@ create_ptable <- function(D,
   if (create) {
     ptab <- pt_create_pTable(params = params,
                              monitoring = monitoring,
-                             debugging = debugging)
+                             debugging = debugging,
+                             scale = scale)
 
     out <- ptab
 
@@ -158,7 +160,8 @@ create_cnt_ptable <- function(D,
                               mono = TRUE,
                               label = paste0("D", D, "V", V * 100),
                               monitoring = FALSE,
-                              create = TRUE) {
+                              create = TRUE,
+                              scale = FALSE) {
   create_ptable(
     D = D,
     V = V,
@@ -173,7 +176,8 @@ create_cnt_ptable <- function(D,
     label = label,
     monitoring = monitoring,
     debugging = FALSE,
-    create = create
+    create = create,
+    scale = scale
   )
 }
 #' @rdname ptable_pkg

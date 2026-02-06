@@ -34,7 +34,7 @@
 #' # ptable for magnitude tables
 #' create_num_ptable(D = 5, V = 2, step = 4, icat = c(1, 3, 5))
 #' @noRd
-pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE) {
+pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, scale=FALSE) {
   . <- v <- p <- NULL
   p_int_ub <- p_int_lb <- i_info <- type <- symmetry <- NULL
   pert_params <- params
@@ -205,14 +205,22 @@ pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE) {
           message("Sum of p: ", chp %% 1)
         }
         if (chp != 1) {
-          stop(paste0("The ptable can't be calculated without a violation of ",
-                      "the constraints. The combination of the input ",
-                      "parameters you set (e.g. D=",D,", V=",V,", js=",js,
-                      " or pstay) doesn't work. Please try another ",
-                      "specification: either change the arguments 'mono=' or ",
-                      "'optim=' or try to use a different combination of ",
-                      "input parameters (hint: changing the variance is ",
-                      "sufficient in most cases)."), call. = FALSE)
+          if(!scale){
+            stop(paste0("The ptable can't be calculated without a violation of ",
+                        "the constraints. The combination of the input ",
+                        "parameters you set (e.g. D=",D,", V=",V,", js=",js,
+                        " or pstay) doesn't work. Please try another ",
+                        "specification: either change the arguments 'mono=' or ",
+                        "'optim=' or try to use a different combination of ",
+                        "input parameters (hint: changing the variance is ",
+                        "sufficient in most cases)."), call. = FALSE)
+          }else{
+            p_new <- p_new /sum(p_new)
+            if (debugging) {
+              message("p_new has been scaled to sum up to 1")
+              message("p_new:" , p_new)
+            }
+          }
         }
       }
     }
