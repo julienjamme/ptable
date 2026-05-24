@@ -16,11 +16,18 @@
 #' variables. For more information, see the vignette using [pt_vignette()].
 #' @md
 #' @seealso [create_cnt_ptable()], [create_num_ptable()]
+#'
 #' @param params a `list` or an object generated with [pt_create_pParams()]. In
 #' case a simple list is provided, the named list-arguments are expected to be
 #' the same as those documented in [pt_create_pParams()].
 #' @param monitoring (logical) output monitoring on/off
 #' @param debugging (logical) debug monitoring on/off
+#' @param exactp (logical) whether the sum of probabilities produced by the optim program 
+#'  has to be exactly equal to one once. If exactp is FALSE, the output probabilities
+#'  are scaled to sum up exactly to 1.
+#' @param tolerancep (numeric) if exactp is FALSE, the maximal difference 
+#' tolerated between the sum of probabilities produced by the optim program 
+#' and 1. If 
 #'
 #' @return Returns an object of [ptable-class].
 #'
@@ -34,7 +41,7 @@
 #' # ptable for magnitude tables
 #' create_num_ptable(D = 5, V = 2, step = 4, icat = c(1, 3, 5))
 #' @noRd
-pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, scale=FALSE) {
+pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, exactp=TRUE, tolerancep = 1e-5) {
   . <- v <- p <- NULL
   p_int_ub <- p_int_lb <- i_info <- type <- symmetry <- NULL
   pert_params <- params
@@ -204,22 +211,26 @@ pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, scal
         if (debugging) {
           message("Sum of p: ", chp %% 1)
         }
-        if (chp != 1) {
-          if(!scale){
-            stop(paste0("The ptable can't be calculated without a violation of ",
-                        "the constraints. The combination of the input ",
-                        "parameters you set (e.g. D=",D,", V=",V,", js=",js,
-                        " or pstay) doesn't work. Please try another ",
-                        "specification: either change the arguments 'mono=' or ",
-                        "'optim=' or try to use a different combination of ",
-                        "input parameters (hint: changing the variance is ",
-                        "sufficient in most cases)."), call. = FALSE)
-          }else{
-            p_new <- p_new /sum(p_new)
-            if (debugging) {
-              message("p_new has been scaled to sum up to 1")
-              message("p_new:" , p_new)
-            }
+        
+        tolerance_chp <- if(exactp) 0 else tolerancep
+        if (!isTRUE(all.equal(chp, 1, tolerance = tolerance_chp))) {
+          
+          stop(paste0("The ptable can't be calculated without a violation of ",
+                      "the constraints. The combination of the input ",
+                      "parameters you set (e.g. D=",D,", V=",V,", js=",js,
+                      " or pstay) doesn't work. Please try another ",
+                      "specification: either change the arguments 'mono=' or ",
+                      "'optim=' or try to use a different combination of ",
+                      "input parameters (hint: changing the variance is ",
+                      "sufficient in most cases)."), call. = FALSE)
+          
+        }else if(!exactp){
+          p_old <- p_new
+          p_new <- p_old / sum(p_old)
+          if (debugging) {
+            message("p_new has been scaled to sum up to 1")
+            message("p_old:", p_old)
+            message("p_new:", p_new)
           }
         }
       }
@@ -294,8 +305,8 @@ pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, scal
   check <- cbind(
     fifi_check_pTable(DT = erg_dt),
     iter = as.integer(erg_iter)
-    )
-
+  )
+  
   if (monitoring) {
     message("")
     message("Perturbation probabilities (in %):")
@@ -309,7 +320,7 @@ pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, scal
     print(check)
     message("")
   }
-
+  
   # Perturbation Table/Matrix
   pTable <- copy(erg_dt)
   pTable[, type := ttype]
@@ -319,22 +330,22 @@ pt_create_pTable <- function(params, monitoring = FALSE, debugging = FALSE, scal
   # differences of the rounded intervals
   pTable[, p := p_int_ub - p_int_lb]
   pTable <- pTable[, .(i, j, p, v, p_int_lb, p_int_ub, type)]
-
+  
   # Ouput
   out <- new("ptable")
   attr(pTable, "intervals") <- "default"
-
+  
   slot(out, "pTable") <- pTable
   slot(out, "tMatrix") <- as.matrix(Matrix)
-
+  
   slot(out, "pClasses") <- icat_
   slot(out, "pParams") <- pert_params
   slot(out, "empResults") <- check
-
+  
   slot(out, "tStamp") <- format(Sys.time(), "%Y%m%d%H%M%S")
   slot(out, "type") <- ttype
   slot(out, "table") <- table
-
+  
   validObject(out)
   out
 }

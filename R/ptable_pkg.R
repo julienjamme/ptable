@@ -110,7 +110,8 @@ create_ptable <- function(D,
                           debugging = FALSE,
                           create = TRUE,
                           params = NULL,
-                          scale = FALSE) { #to avoid error prompt while sum of p is not exactly 1 = > p are scaled to reach sum(p)=1
+                          exactp = TRUE,
+                          tolerancep = 1e-5) { #to avoid error prompt while sum of p is not exactly 1 = > p are scaled to reach sum(p)=1
   stopifnot(is_logical(monitoring))
   stopifnot(is_logical(debugging))
   stopifnot(is_logical(create))
@@ -140,7 +141,8 @@ create_ptable <- function(D,
     ptab <- pt_create_pTable(params = params,
                              monitoring = monitoring,
                              debugging = debugging,
-                             scale = scale)
+                             exactp = exactp,
+                             tolerancep = tolerancep)
 
     out <- ptab
 
@@ -161,7 +163,8 @@ create_cnt_ptable <- function(D,
                               label = paste0("D", D, "V", V * 100),
                               monitoring = FALSE,
                               create = TRUE,
-                              scale = FALSE) {
+                              exactp = TRUE,
+                              tolerancep = 1e-5) {
   create_ptable(
     D = D,
     V = V,
@@ -177,7 +180,8 @@ create_cnt_ptable <- function(D,
     monitoring = monitoring,
     debugging = FALSE,
     create = create,
-    scale = scale
+    exactp = exactp,
+    tolerancep = tolerancep
   )
 }
 #' @rdname ptable_pkg

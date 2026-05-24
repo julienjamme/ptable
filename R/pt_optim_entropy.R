@@ -89,7 +89,7 @@ pt_optim_entropy <- function(optim = optim,
     fct_eval_g_eq <- eval_g_eq_v4
   }
   if (optim == 5) {
-    fct_eval_f <- eval_f_v5
+    fct_eval_f <- eval_f #eval_f_v5
     fct_eval_g_ineq <- eval_g_ineq_v5
     fct_eval_g_eq <- eval_g_eq_v5
   }
@@ -342,9 +342,9 @@ eval_g_ineq_v5 <- function(x,
                            v = v,
                            variance = variance,
                            mono = mono) {
-  constr <- c(x - 1,-x)
-  grad   <-
-    rbind(diag(1, length(v), length(v)), diag(-1, length(v), length(v)))
+  constr <- c(x - 1, -x, -sum(v*x))
+  grad  <-
+    rbind(diag(1, length(v), length(v)), diag(-1, length(v), length(v)), -v)
   
   # monotony condition
   if (mono) {
@@ -361,7 +361,29 @@ eval_g_ineq_v5 <- function(x,
   return(list("constraints" = constr, "jacobian" = grad))
 }
 
-
+# 
+# eval_g_ineq_v5 <- function(x,
+#                            v = v,
+#                            variance = variance,
+#                            mono = mono) {
+#   constr <- c(x - 1,-x)
+#   grad  <-
+#     rbind(diag(1, length(v), length(v)), diag(-1, length(v), length(v)))
+#   
+#   # monotony condition
+#   if (mono) {
+#     mono_fct <- eval_g_mono(
+#       x = x,
+#       v = v,
+#       constr = constr,
+#       grad = grad
+#     )
+#     constr <- mono_fct$constr
+#     grad <- mono_fct$grad
+#   }
+#   
+#   return(list("constraints" = constr, "jacobian" = grad))
+# }
 
 
 
